@@ -11,6 +11,8 @@ from getRates import getDailyLendingRate
 from messageDiscord import sendMessage
 from utility.readVars import readKeys
 
+from dotenv import load_dotenv
+
 def autoLend(currency):
     """ Auto-lend all available account equity at the most competitive 
         daily interest rate. 
@@ -57,4 +59,5 @@ def buildData(currency, dailyIntRate, size):
 
 
 if __name__ == "__main__":
+    load_dotenv()
     autoLend("USDT")

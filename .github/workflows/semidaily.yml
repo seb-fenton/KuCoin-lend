@@ -1,9 +1,9 @@
 name: Semi-Daily Cron Jobs
 
-on: workflow_dispatch
-  #schedule:
-  #- cron: "46 0 * * *" # every day at midnight
-  #- cron: "0 12 * * *" # every day at midday
+on: 
+  schedule:
+  - cron: "46 0 * * *" # every day at midnight
+  - cron: "0 12 * * *" # every day at midday
 
 jobs:
   autoLend:
