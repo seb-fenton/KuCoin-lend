@@ -1,4 +1,5 @@
 import requests
+import os
 from discord import Webhook, RequestsWebhookAdapter
 
 def sendMessage(message: str):

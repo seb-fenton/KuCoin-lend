@@ -29,7 +29,7 @@ def autoLend(currency):
 
     response = requests.post(baseURL, headers=headers, data=json.dumps(data))
 
-    if response.status_code != "200":
+    if json.loads(response.text)['code'] != "200000":
         sendMessage(f"Lend order failed with message: {response.text}")
     else:
         sendMessage(f"Order {response.text} succesful! Lent {available} USDT @ {dailyIntRate}%.")
