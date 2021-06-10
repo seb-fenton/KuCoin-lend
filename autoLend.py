@@ -1,60 +1,79 @@
 import requests
 import os
-import time
-import base64
-import hmac
-import hashlib 
 import json
 
-from getAccountStatus import getBalance
-from getRates import getDailyLendingRate
-from messageDiscord import sendMessage
-from utility.readVars import readKeys
+import kuCoinInterface
+import messageDiscord
 
-def autoLend(currency):
-    """ Auto-lend all available account equity at the most competitive 
-        daily interest rate. 
-    
-    Keyword arguments:
-    currency -- coin ticker (i.e. BTC, USDT) to get user's balance & find rate for
+from utility.readVars import readKeysFromEnv
+from utility.buildHeaders import generateHeadersJson
+
+def autoLend(currencyTicker = "USDT"):
+    """ Auto-lend all available account equity for a given token
+        at the most competitive daily interest rate. 
     """
-    baseURL = 'https://api.kucoin.com/api/v1/margin/lend'
+    order = buildLendOrder(currencyTicker)
+    sendLendOrder(order)
 
-    balance, available = getBalance(currency)
-    dailyIntRate = getDailyLendingRate(currency)
+def buildLendOrder(currencyTicker):
+    currencyAvailable, interestRate =  getKeyMetrics(currencyTicker)
+    order = buildOrder(currencyTicker, currencyAvailable, interestRate)
 
-    key, secret, passphrase = readKeys()
-    data = buildData(currency, dailyIntRate, int(float(available)))
-    headers = generateHeadersLend(key, secret, passphrase, data)
+    return order
 
-    response = requests.post(baseURL, headers=headers, data=json.dumps(data))
+def getKeyMetrics(currencyTicker):
+    currencyAvailable = kuCoinInterface.getAvailable(currencyTicker)
+    interestRate = kuCoinInterface.getDailyLendingRate(currencyTicker)
 
-    if json.loads(response.text)['code'] != "200000":
-        sendMessage(f"Lend order failed with message: {response.text}")
-    else:
-        sendMessage(f"Order {response.text} succesful! Lent {available} USDT @ {dailyIntRate}%.")
+    return currencyAvailable, interestRate
 
-def generateHeadersLend(apiKey, apiSecret, apiPassphrase, data):
-    now = int(time.time() * 1000)
-    str_to_sign = str(now) + 'POST' + '/api/v1/margin/lend' + json.dumps(data)
+def buildOrder(currencyTicker, currencyAvailable, interestRate):
+    baseURL = getBaseURL()
 
-    signature = base64.b64encode(hmac.new(apiSecret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
-    passphrase = base64.b64encode(hmac.new(apiSecret.encode('utf-8'), apiPassphrase.encode('utf-8'), hashlib.sha256).digest())
+    orderData = buildOrderData(currencyTicker, currencyAvailable, interestRate)
+    headers = buildHeaderFromOrderData(orderData, baseURL)
+        
+    return baseURL, headers, orderData
 
-    headers = {
-        "KC-API-SIGN": signature,
-        "KC-API-TIMESTAMP": str(now),
-        "KC-API-KEY": apiKey,
-        "KC-API-PASSPHRASE": passphrase,
-        "KC-API-KEY-VERSION": str(2),
-        "Content-Type": "application/json"
-    }
+def getBaseURL():
+    return "https://api.kucoin.com/api/v1/margin/lend"
+
+def buildOrderData(currencyTicker, currencyAvailable, interestRate):
+    # we hardcode lendOrderLength here as the KuCoin API expects this specific value
+    lendOrderLength = 7
+    orderData = {'currency': currencyTicker,
+                 'dailyIntRate': interestRate, 
+                 'size': currencyAvailable, 
+                 'term': lendOrderLength}
+    return orderData
+
+def buildHeaderFromOrderData(orderData, baseURL):
+    publicKey, secretKey, passphrase = readKeysFromEnv()
+    headers = generateHeadersJson(publicKey, secretKey, passphrase, orderData, baseURL)
+    
     return headers
 
-def buildData(currency, dailyIntRate, size):
-    # term is the 7-day lending period, which is the one we use due to market volatility
-    return {'currency': currency, 'dailyIntRate': dailyIntRate, 'size': size, 'term': 7}
+def sendLendOrder(order):
 
+    baseURL, headers, orderData = order
+    response = requests.post(baseURL, headers=headers, data=json.dumps(orderData))
+    pushToChannels(response, orderData)
+
+def pushToChannels(response, orderData):
+
+    currencyTicker = orderData['currency']
+    amountLent = orderData['size']
+    dailyIntRate = orderData['dailyIntRate']
+
+    message = buildMessage(response, currencyTicker, amountLent, dailyIntRate)
+
+    messageDiscord.push(message)
+
+def buildMessage(response, currencyTicker, amountLent, dailyIntRate):
+    if json.loads(response.text)['code'] != "200000":
+        return f"Lend order failed with message: {response.text}"
+    else:
+        return f"Order {response.text} succesful! Lent {available} USDT @ {dailyIntRate}%."
 
 if __name__ == "__main__":
     autoLend("USDT")

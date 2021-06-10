@@ -1,7 +1,7 @@
 import json
 import os
 
-def readKeys():
+def readKeysFromEnv():
     
     key = os.environ.get("KC_KEY")
     secret = os.environ.get("KC_SECRET")
