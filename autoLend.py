@@ -1,6 +1,7 @@
 import requests
 import os
 import json
+import math
 
 import kuCoinInterface
 import messageDiscord
@@ -41,9 +42,11 @@ def getBaseURL():
 def buildOrderData(currencyTicker, currencyAvailable, interestRate):
     # we hardcode lendOrderLength here as the KuCoin API expects this specific value
     lendOrderLength = 7
+    lendSize = math.floor(float(currencyAvailable))
+
     orderData = {'currency': currencyTicker,
                  'dailyIntRate': interestRate, 
-                 'size': currencyAvailable, 
+                 'size': lendSize, 
                  'term': lendOrderLength}
     return orderData
 
@@ -73,7 +76,7 @@ def buildMessage(response, currencyTicker, amountLent, dailyIntRate):
     if json.loads(response.text)['code'] != "200000":
         return f"Lend order failed with message: {response.text}"
     else:
-        return f"Order {response.text} succesful! Lent {available} USDT @ {dailyIntRate}%."
+        return f"Order {response.text} succesful! Lent {amountLent} USDT @ {dailyIntRate}%."
 
 if __name__ == "__main__":
     autoLend("USDT")
