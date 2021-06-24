@@ -1,29 +1,29 @@
-name: Semi-Daily Cron Jobs
+#name: Semi-Daily Cron Jobs
 
-on: 
-  schedule:
-  - cron: "46 0 * * *" # every day at midnight
-  - cron: "0 12 * * *" # every day at midday
+#on: 
+#  schedule:
+#  - cron: "46 0 * * *" # every day at midnight
+#  - cron: "0 12 * * *" # every day at midday
 
-jobs:
-  autoLend:
-    name: AutoLend USDT
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: checkout repo content
-        uses: actions/checkout@v2 # checkout the repository content to github runner.
-      - name: setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8 #install the python needed
-      - name: execute py script # run the run.py to get the latest data
-        env:
-          KC_KEY: ${{ secrets.KC_KEY }}
-          KC_SECRET: ${{ secrets.KC_SECRET }}
-          KC_PASSPHRASE: ${{ secrets.KC_PASSPHRASE }}
-          DC_WEBHOOK: ${{ secrets.DC_WEBHOOK }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          python autoLend.py
+#jobs:
+#  autoLend:
+#    name: AutoLend USDT
+#    runs-on: ubuntu-latest
+#    #
+#    steps:
+#      - name: checkout repo content
+#        uses: actions/checkout@v2 # checkout the repository content to github runner
+#      - name: setup python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: 3.8 #install the python needed
+#      - name: execute py script # run the run.py to get the latest data
+#        env:
+#          KC_KEY: ${{ secrets.KC_KEY }}
+#          KC_SECRET: ${{ secrets.KC_SECRET }}
+#          KC_PASSPHRASE: ${{ secrets.KC_PASSPHRASE }}
+#          DC_WEBHOOK: ${{ secrets.DC_WEBHOOK }}
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -r requirements.txt
+#          python autoLend.py
